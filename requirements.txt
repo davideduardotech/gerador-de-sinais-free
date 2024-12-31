@@ -1,0 +1,6 @@
+numpy==1.21.6
+git+https://github.com/LonamiWebs/Telethon.git
+colorama==0.4.5
+git+https://github.com/iqoptionapi/iqoptionapi.git
+pandas==1.1.5
+git+https://github.com/matplotlib/mplfinance.git
