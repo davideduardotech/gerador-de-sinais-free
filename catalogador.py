@@ -549,13 +549,13 @@ class Catalogador:
                                             # 6. enviar mensagem do placar
                                             for grupo in lista_de_grupos:
                                                 try:
-                                                    """url = "https://seu-link-aqui.com"
-                                                    button_text = "👉 IA SEM GALE 👈"
+                                                    url = "https://wa.me/5531997711921"
+                                                    button_text = "👉 SINAIS VIP"
                                                     markup = InlineKeyboardMarkup()
                                                     button = InlineKeyboardButton(text=button_text, url=url)
                                                     markup.add(button)
-                                                    client.send_message(chat_id=grupo["id do grupo(telegram)"], text=mensagens.def_mensagem_do_placar(WINS, LOSSES), reply_markup=markup)"""
-                                                    self.api_telegram.send_message(chat_id=grupo, text=mensagens.def_mensagem_do_placar(self.wins, self.losses))
+                                                    """client.send_message(chat_id=grupo["id do grupo(telegram)"], text=mensagens.def_mensagem_do_placar(WINS, LOSSES), reply_markup=markup)"""
+                                                    self.api_telegram.send_message(chat_id=grupo, text=mensagens.def_mensagem_do_placar(self.wins, self.losses), reply_markup=markup)
                                                 except Exception as error:
                                                     print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao enviar placar | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
                                             
