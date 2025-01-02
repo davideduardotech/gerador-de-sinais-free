@@ -102,13 +102,9 @@ class Catalogador:
         self.losses = 0
         self.lista_de_imagens = []
 
-    
     def verificarConexaoDaIqOption(self):
         if not self.api_iqoption.check_connect():
             self.api_iqoption = self.botManager.reconectar_iqoption() 
-
-    
-
 
     # gerar configurações
     def definir_configuracoes_automaticas_para_operacoes_rapidas(self,configuracoes, timeframe=None):
@@ -134,7 +130,6 @@ class Catalogador:
     def checar_placar_pra_reinicar_as_meia_noite(self):
         global WINS, LOSSES
 
-   
     def filtrar_operacoes(self, catalogacao, configuracoes, quantidade_de_operacoes):
         """
 
@@ -445,7 +440,7 @@ class Catalogador:
                                 mensagem_aguardando_operacao = mensagem_aguardando_operacao
                                 self.api_telegram.send_message(grupo, mensagem_aguardando_operacao)
                             except Exception as error:
-                                print("{Fore.GREEN}[LOG]{Fore.RESET} @Catalogador | @Function monitor_operations(try/exception) | ocorreu um erro ao tentar enviar a mensagem de aguardando operação {} {} {}M {} | @Error {}".format(ativo_da_operacao, horario, timeframe, direcao, error))
+                                print("{}[LOG]{} @Catalogador | @Function monitor_operations(try/exception) | ocorreu um erro ao tentar enviar a mensagem de aguardando operação {} {} {}M {} | @Error {}".format(Fore.GREEN, Fore.RESET,ativo_da_operacao, horario, timeframe, direcao, error))
 
 
                         while True:
@@ -461,7 +456,7 @@ class Catalogador:
                                     try:
                                         self.api_telegram.send_message(grupo, mensagens.def_mensagem_de_operacao_realizada(ativo_da_operacao))
                                     except Exception as error:
-                                        print("{Fore.GREEN}[LOG]{Fore.RESET} @Catalogador | @Function monitor_operations(try/exception) | ocorreu um erro ao tentar enviar a mensagem de operação realizada | @Operação {} {} {}M {} | @Error {}".format(ativo_da_operacao, horario, timeframe, direcao, error))
+                                        print("{}[LOG]{} @Catalogador | @Function monitor_operations(try/exception) | ocorreu um erro ao tentar enviar a mensagem de operação realizada | @Operação {} {} {}M {} | @Error {}".format(Fore.GREEN, Fore.RESET,ativo_da_operacao, horario, timeframe, direcao, error))
 
                                 resultados = ['Nenhum Martingale', '1° Martingale', '2° Martingale']
                                 for i, resultado_atual in enumerate(resultados):
