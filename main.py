@@ -489,16 +489,6 @@ class BotManager:
 
 
         self.criar_pasta_de_imagens()
-
-
-
-
-
-
-
-
-        sys.exit()
-        return 
         self.conectar_mongodb()
         self.conectar_iqoption()
         self.processar_sinais()
