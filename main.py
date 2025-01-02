@@ -300,6 +300,22 @@ class BotManager:
         self.mongodbDocument = {}
 
         self.lista_de_grupos = [self.id_grupo_telegram]
+    def criar_pasta_de_imagens(self):
+        """
+        Verifica se a pasta 'machinelearning/temporary images' existe,
+        e caso não exista, cria a pasta.
+        """
+        try:
+            caminho_pasta = "machinelearning/temporary images"
+            if not os.path.exists(caminho_pasta):
+                os.makedirs(caminho_pasta)
+                self.logging(f"{Fore.GREEN}[BOTMANAGER]{Fore.RESET}", f"Pasta '{caminho_pasta}' criada com sucesso.")
+                
+            else:
+                self.logging(f"{Fore.GREEN}[BOTMANAGER]{Fore.RESET}", f"Pasta '{caminho_pasta}' já existe.")
+               
+        except Exception as erro:
+            print(f"Erro ao verificar/criar a pasta: {erro}")
 
     def datetime_and_weekday_in_string(self): 
         days = ['Segunda-Feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado','Domingo']
@@ -362,6 +378,34 @@ class BotManager:
         except Exception as erro:
             self.logging(f"{Fore.RED}[MONGODB]{Fore.RESET}", f"Erro ao adicionar derrota: {erro}")
             return None
+
+    def resetPlacar(self):
+        """
+        Reseta o placar atual para 0x0 no documento do MongoDB.
+        """
+        try:
+            # Busca o documento atual
+            documento = self.mongodbCollection.find_one({"_id": self.mongodbDocument["_id"]})
+            if not documento:
+                raise ValueError("Nenhum documento encontrado na coleção.")
+        
+            print('função resetarPlacar valor do documento atual:', documento)
+
+            # Reseta o placar para 0x0
+            self.mongodbCollection.update_one(
+                {"_id": documento["_id"]},
+                {"$set": {"placar atual": "0x0"}}
+            )
+
+            # Atualiza o cache local
+            self.mongodbDocument = self.mongodbCollection.find_one({"_id": documento["_id"]})
+            print('função resetarPlacar valor do documento atualizado:', self.mongodbDocument)
+
+            return {"wins": 0, "losses": 0, "placar atual": "0x0"}
+        except Exception as erro:
+            self.logging(f"{Fore.RED}[MONGODB]{Fore.RESET}", f"Erro ao resetar o placar: {erro}")
+            return None
+
 
     def conectar_mongodb(self):
         """Conecta ao banco de dados MongoDB."""
@@ -442,6 +486,19 @@ class BotManager:
         print("| Detalhes")
         print("Desenvolvedor: David Eduardo (https://github.com/davideduardotech)")
 
+
+
+        self.criar_pasta_de_imagens()
+
+
+
+
+
+
+
+
+        sys.exit()
+        return 
         self.conectar_mongodb()
         self.conectar_iqoption()
         self.processar_sinais()

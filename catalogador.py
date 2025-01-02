@@ -544,7 +544,7 @@ class Catalogador:
                                             # 6. enviar mensagem do placar
                                             for grupo in lista_de_grupos:
                                                 try:
-                                                    url = "https://wa.me/5531997711921"
+                                                    url = "https://wa.me/5531997711921?text=Quero%20saber%20mais%20sobre%20os%20sinais%20VIP"
                                                     button_text = "👉 SINAIS VIP"
                                                     markup = InlineKeyboardMarkup()
                                                     button = InlineKeyboardButton(text=button_text, url=url)
@@ -554,7 +554,18 @@ class Catalogador:
                                                 except Exception as error:
                                                     print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao enviar placar | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
                                             
-                                            
+
+
+
+
+                                            if self.wins >= 1000:
+                                                placar = self.botManager.resetPlacar()
+                                                self.wins = placar["wins"]
+                                                self.losses = placar["losses"]
+
+
+
+
                                             break  # Parar o loop se o resultado for 'win'
 
                                         elif resultado == 'loss':
