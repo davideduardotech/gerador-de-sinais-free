@@ -436,7 +436,7 @@ class Catalogador:
                         #$ CODDING: Enviar Mensagem de Aguardando Operação | Grupos do Telegram 
                         for grupo in lista_de_grupos:
                             try:
-                                mensagem_aguardando_operacao = mensagens.def_mensagem_de_aguardando_operacao(ativo_da_operacao, horario, timeframe, direcao)
+                                mensagem_aguardando_operacao = mensagens.def_mensagem_de_aguardando_operacao(ativo_da_operacao.replace("-op",""), horario, timeframe, direcao)
                                 mensagem_aguardando_operacao = mensagem_aguardando_operacao
                                 self.api_telegram.send_message(grupo, mensagem_aguardando_operacao)
                             except Exception as error:
@@ -454,7 +454,7 @@ class Catalogador:
                                 """ 
                                 for grupo in lista_de_grupos:
                                     try:
-                                        self.api_telegram.send_message(grupo, mensagens.def_mensagem_de_operacao_realizada(ativo_da_operacao))
+                                        self.api_telegram.send_message(grupo, mensagens.def_mensagem_de_operacao_realizada(ativo_da_operacao.replace("-op", "")))
                                     except Exception as error:
                                         print("{}[LOG]{} @Catalogador | @Function monitor_operations(try/exception) | ocorreu um erro ao tentar enviar a mensagem de operação realizada | @Operação {} {} {}M {} | @Error {}".format(Fore.GREEN, Fore.RESET,ativo_da_operacao, horario, timeframe, direcao, error))
 
@@ -491,7 +491,7 @@ class Catalogador:
                                             
                                             # 1. gerar imagem
                                             nome_da_imagem = grafico_candlestick(
-                                                telegram={'id': api_hash}, velas=velas, titulo=ativo_da_operacao, subtitulo=f'Win +R$({resultado_atual})')
+                                                telegram={'id': api_hash}, velas=velas, titulo=ativo_da_operacao.replace('-op', ''), subtitulo=f'Win +R$({resultado_atual})')
                                             
                                             # 2. enviando mensagem de win(+R$) com imagem e sticker
                                             for grupo in lista_de_grupos:
@@ -499,7 +499,7 @@ class Catalogador:
                                                     self.api_telegram.send_photo(
                                                         chat_id=grupo, 
                                                         photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
-                                                        caption=mensagens.def_mensagem_de_resultado_da_operacao(ativo_da_operacao, horario_da_operacao, timeframe, direcao, f'<b>Win +R$({resultado_atual})</b>', mensagem_de_promocao='win')
+                                                        caption=mensagens.def_mensagem_de_resultado_da_operacao(ativo_da_operacao.replace('-op', ''), horario_da_operacao, timeframe, direcao, f'<b>Win +R$({resultado_atual})</b>', mensagem_de_promocao='win')
                                                     )
 
                                                     if resultado_atual == 'Nenhum Martingale':
@@ -571,7 +571,7 @@ class Catalogador:
                                         elif resultado == 'loss':
                                             # 1. gerar imagem
                                             nome_da_imagem = grafico_candlestick(
-                                                telegram={'id': api_hash}, velas=velas, titulo=ativo_da_operacao, subtitulo=f'Loss -R$({resultado_atual})')
+                                                telegram={'id': api_hash}, velas=velas, titulo=ativo_da_operacao.replace('-op', ''), subtitulo=f'Loss -R$({resultado_atual})')
                                             
                                             # 2. enviar mensagem de loss(-R$) com a imagem gerada
                                             for grupo in lista_de_grupos:
@@ -580,19 +580,19 @@ class Catalogador:
                                                         self.api_telegram.send_photo(
                                                             chat_id=grupo, 
                                                             photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
-                                                            caption=mensagens.def_mensagem_de_resultado_da_operacao(ativo_da_operacao, horario_da_operacao, timeframe, direcao, f'<b>Loss -R$({resultado_atual})</b>', aguardando_1_martingale=True)
+                                                            caption=mensagens.def_mensagem_de_resultado_da_operacao(ativo_da_operacao.replace('-op',''), horario_da_operacao, timeframe, direcao, f'<b>Loss -R$({resultado_atual})</b>', aguardando_1_martingale=True)
                                                         )
                                                     elif resultado_atual == '1° Martingale':
                                                         self.api_telegram.send_photo(
                                                             chat_id=grupo, 
                                                             photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
-                                                            caption=mensagens.def_mensagem_de_resultado_da_operacao(ativo_da_operacao, horario_da_operacao, timeframe, direcao, f'<b>Loss -R$({resultado_atual})</b>', aguardando_2_martingale=True)
+                                                            caption=mensagens.def_mensagem_de_resultado_da_operacao(ativo_da_operacao.replace('-op',''), horario_da_operacao, timeframe, direcao, f'<b>Loss -R$({resultado_atual})</b>', aguardando_2_martingale=True)
                                                         )
                                                     else:
                                                         self.api_telegram.send_photo(
                                                             chat_id=grupo, 
                                                             photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
-                                                            caption=mensagens.def_mensagem_de_resultado_da_operacao(ativo_da_operacao, horario_da_operacao, timeframe, direcao, f'<b>Loss -R$({resultado_atual})</b>')
+                                                            caption=mensagens.def_mensagem_de_resultado_da_operacao(ativo_da_operacao.replace('-op',''), horario_da_operacao, timeframe, direcao, f'<b>Loss -R$({resultado_atual})</b>')
                                                         )
                                                         sticker_path = 'sticks/loss.webp'
                                                         self.api_telegram.send_sticker(chat_id=grupo, sticker=open(sticker_path, 'rb'))
@@ -626,7 +626,7 @@ class Catalogador:
                                         if resultado_atual == '2° Martingale':
                                             # 1. gerar imagem
                                             nome_da_imagem = grafico_candlestick(
-                                                telegram={'id': api_hash}, velas=velas, titulo=ativo_da_operacao, subtitulo=f'Loss -R$({resultado_atual})')
+                                                telegram={'id': api_hash}, velas=velas, titulo=ativo_da_operacao.replace('-op',''), subtitulo=f'Loss -R$({resultado_atual})')
                                             
                                             # 2. enviar imagem com a mensagem 
                                             for grupo in lista_de_grupos:
@@ -635,7 +635,7 @@ class Catalogador:
                                                         chat_id=grupo, 
                                                         photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
                                                         caption=mensagens.def_mensagem_de_resultado_da_operacao(
-                                                            ativo_da_operacao, horario_da_operacao, timeframe, direcao, 
+                                                            ativo_da_operacao.replace('-op',''), horario_da_operacao, timeframe, direcao, 
                                                             f'<b>Loss -R$({resultado_atual})</b>\n\n\n🔍 <i>DOJI</i> detectado no ativo <i>{ativo_da_operacao}</i>')
                                                     )
                                                     self.api_telegram.send_sticker(chat_id=grupo, sticker=open('sticks/doji.webp', 'rb'))
@@ -664,7 +664,7 @@ class Catalogador:
                                         else:
                                             # Enviar mensagem de DOJI e continuar para o próximo gale
                                             nome_da_imagem = grafico_candlestick(
-                                                telegram={'id': api_hash}, velas=velas, titulo=ativo_da_operacao, subtitulo=f'DOJI detectado ({resultado_atual})')
+                                                telegram={'id': api_hash}, velas=velas, titulo=ativo_da_operacao.replace('-op',''), subtitulo=f'DOJI detectado ({resultado_atual})')
                                             
                                             for grupo in lista_de_grupos:
                                                 try:
@@ -672,7 +672,7 @@ class Catalogador:
                                                         chat_id=grupo, 
                                                         photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
                                                         caption=mensagens.def_mensagem_de_resultado_da_operacao(
-                                                            ativo_da_operacao, horario_da_operacao, timeframe, direcao, 
+                                                            ativo_da_operacao.replace('-op',''), horario_da_operacao, timeframe, direcao, 
                                                             f'\n🔍 DOJI detectado no ativo <i>{ativo_da_operacao}</i>. continuando operação...')
                                                     )
                                                 except Exception as error:
