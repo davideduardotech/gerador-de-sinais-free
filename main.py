@@ -570,12 +570,9 @@ class BotManager:
                     self.reconectar_iqoption()
                 
                 configuracoes = self.catalogador.definir_configuracoes_automaticas_para_operacoes_rapidas({}, timeframe='1 minuto')
-                #dicionario_operacoes = self.catalogador.catalogar_operacoes_rapidas(configuracoes)
-
-                dicionario_operacoes = {
-                    '21:51': {'GBPUSD-OTC': {'21:51': {'verde': 8, 'vermelha': 0, 'doji': 0, '%': 100, 'dir': 'CALL', 'mg1': {'verde': 14, 'vermelha': 2, 'doji': 0, '%': 88}}}}, 
-                    '21:56': {'USDSGD-OTC': {'21:56': {'verde': 8, 'vermelha': 0, 'doji': 0, '%': 100, 'dir': 'PUT', 'mg1': {'verde': 14, 'vermelha': 2, 'doji': 0, '%': 88}}}}
-                    }
+                dicionario_operacoes = self.catalogador.catalogar_operacoes_rapidas(configuracoes)
+                 
+                
         
                 self.catalogador.monitor_operations(
                     self.api_iqoption,
@@ -585,6 +582,7 @@ class BotManager:
                     dicionario_operacoes,
                     configuracoes
                 )
+                time.sleep(1)
             except Exception as erro:
                 print(f"{Fore.RED}Erro no processamento de sinais: {erro}{Fore.RESET}")
                 time.sleep(2)
