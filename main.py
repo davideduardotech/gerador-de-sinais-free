@@ -19,6 +19,109 @@ load_dotenv()
 class Horario:
     def __init__(self, timezone="America/Sao_Paulo"):
         self.timezone = pytz.timezone(timezone)
+    
+    def now(self):
+        return datetime.now(self.timezone)
+ 
+    def horario_valido(self, horario: str) -> bool:
+        """
+        Verifica se o horário informado (no formato 'HH:MM') é maior que o horário atual.
+        
+        Args:
+            horario (str): Horário no formato 'HH:MM' (ex.: "14:00").
+
+        Returns:
+            bool: True se o horário informado é maior que o horário atual, False caso contrário.
+        """
+        try:
+            # Obter o horário atual no timezone configurado
+            agora = datetime.now(self.timezone)
+            
+            # Combinar a data atual com o horário fornecido
+            data_com_horario = datetime.strptime(
+                agora.strftime('%Y-%m-%d') + f" {horario}:00", 
+                '%Y-%m-%d %H:%M:%S'
+            )
+
+            # Ajustar o objeto datetime para o timezone configurado
+            data_com_horario = self.timezone.localize(data_com_horario)
+
+            # Verificar se o horário fornecido é maior que o horário atual
+            return data_com_horario > agora
+        except ValueError:
+            return False
+
+    def aguardar_horario(self, horario: str, delay: int = 0):
+        """
+        Aguarda até que o horário informado (no formato 'HH:MM') seja atingido.
+        
+        Args:
+            horario (str): Horário no formato 'HH:MM' (ex.: "14:00").
+        """
+        try:
+            # Obter a data e horário atual no timezone configurado
+            agora = datetime.now(self.timezone)
+
+            # Extrair horas e minutos do horário fornecido
+            horas, minutos = map(int, horario.split(':'))
+
+            # Verificar se o horário fornecido pertence ao próximo dia
+            data_com_horario = agora.replace(hour=horas, minute=minutos, second=0, microsecond=0)
+            if data_com_horario <= agora:
+                # Se o horário já passou hoje, ajustar para o dia seguinte
+                data_com_horario += timedelta(days=1)
+
+            # Calcular o timestamp do horário da operação e aplicar o delay
+            timestemp_da_operacao = int(data_com_horario.timestamp()) - delay
+
+            # Loop para aguardar até o horário ser atingido
+            while int(datetime.now(self.timezone).timestamp()) < timestemp_da_operacao:
+                time.sleep(1)  # Espera 1 segundo antes de verificar novamente
+
+        except ValueError:
+            raise ValueError("Horário inválido. Certifique-se de usar o formato 'HH:MM'.")
+
+    def proximo_horario(self, horario_atual: str) -> str:
+        horarios = {
+            "00": "01:00", "01": "02:00", "02": "03:00", "03": "04:00",
+            "04": "05:00", "05": "06:00", "06": "07:00", "07": "08:00",
+            "08": "09:00", "09": "10:00", "10": "11:00", "11": "12:00",
+            "12": "13:00", "13": "14:00", "14": "15:00", "15": "16:00",
+            "16": "17:00", "17": "18:00", "18": "19:00", "19": "20:00",
+            "20": "21:00", "21": "22:00", "22": "23:00", "23": "00:00"
+        }
+        return horarios[horario_atual.split(":")[0]]
+
+    def timestamp(self, horario: str, deslocamento_minutos: int = 0) -> int:
+        """
+        Calcula o timestamp baseado no horário fornecido e um deslocamento em minutos.
+
+        Args:
+            horario (str): Horário no formato 'HH:MM' (ex.: "14:00").
+            deslocamento_minutos (int): Deslocamento em minutos (ex.: 0, +1, +2 para martingale).
+
+        Returns:
+            int: Timestamp do horário ajustado.
+        """
+        # Obter a data atual no timezone configurado
+        agora = datetime.now(self.timezone)
+
+        # Combinar a data atual com o horário fornecido
+        data_com_horario = datetime.strptime(
+            agora.strftime('%Y-%m-%d') + f" {horario}:00", 
+            '%Y-%m-%d %H:%M:%S'
+        )
+
+        # Ajustar o objeto datetime para o timezone configurado
+        data_com_horario = self.timezone.localize(data_com_horario)
+
+        # Adicionar o deslocamento em minutos
+        data_com_horario += timedelta(minutes=deslocamento_minutos)
+
+        # Retornar o timestamp
+        return int(data_com_horario.timestamp())
+
+
 
 class Catalogadora:
     def __init__(self, botManager):
@@ -467,8 +570,13 @@ class BotManager:
                     self.reconectar_iqoption()
                 
                 configuracoes = self.catalogador.definir_configuracoes_automaticas_para_operacoes_rapidas({}, timeframe='1 minuto')
-                dicionario_operacoes = self.catalogador.catalogar_operacoes_rapidas(configuracoes)
-                
+                #dicionario_operacoes = self.catalogador.catalogar_operacoes_rapidas(configuracoes)
+
+                dicionario_operacoes = {
+                    '21:51': {'GBPUSD-OTC': {'21:51': {'verde': 8, 'vermelha': 0, 'doji': 0, '%': 100, 'dir': 'CALL', 'mg1': {'verde': 14, 'vermelha': 2, 'doji': 0, '%': 88}}}}, 
+                    '21:56': {'USDSGD-OTC': {'21:56': {'verde': 8, 'vermelha': 0, 'doji': 0, '%': 100, 'dir': 'PUT', 'mg1': {'verde': 14, 'vermelha': 2, 'doji': 0, '%': 88}}}}
+                    }
+        
                 self.catalogador.monitor_operations(
                     self.api_iqoption,
                     self.api_telegram,

@@ -443,256 +443,274 @@ class Catalogador:
                                 print("{}[LOG]{} @Catalogador | @Function monitor_operations(try/exception) | ocorreu um erro ao tentar enviar a mensagem de aguardando operação {} {} {}M {} | @Error {}".format(Fore.GREEN, Fore.RESET,ativo_da_operacao, horario, timeframe, direcao, error))
 
 
-                        while True:
-                            timestemp_da_operacao = int(datetime.timestamp(datetime.strptime(datetime.fromtimestamp(
-                                datetime.utcnow().timestamp() - 10800).strftime('%d/%m/%Y')+' {}:00'.format(horario), '%d/%m/%Y %H:%M:%S')))
-                            if int(datetime.fromtimestamp(datetime.utcnow().timestamp() - 10800).timestamp()) >= timestemp_da_operacao:
-                                
-                                """
-                                CODDING: Enviar Mensagem de Operação Realizada | @TeleBot
-                                | Nenhum Martingale
-                                """ 
-                                for grupo in lista_de_grupos:
+                        self.botManager.horario.aguardar_horario(horario)
+
+                        """
+                        CODDING: Enviar Mensagem de Operação Realizada | @TeleBot
+                        | Nenhum Martingale
+                        """ 
+                        for grupo in lista_de_grupos:
+                            try:
+                                self.api_telegram.send_message(grupo, mensagens.def_mensagem_de_operacao_realizada(ativo_da_operacao.replace("-op", "")))
+                            except Exception as error:
+                                print("{}[LOG]{} @Catalogador | @Function monitor_operations(try/exception) | ocorreu um erro ao tentar enviar a mensagem de operação realizada | @Operação {} {} {}M {} | @Error {}".format(Fore.GREEN, Fore.RESET,ativo_da_operacao, horario, timeframe, direcao, error))
+
+                        resultados = ['Nenhum Martingale', '1° Martingale', '2° Martingale']
+                        for i, resultado_atual in enumerate(resultados):
+                            # Espera o tempo apropriado
+                            time.sleep(timeframe * 60)
+
+                            # Calculando timestamp
+                            timestamp = self.botManager.horario.timestamp(horario, deslocamento_minutos=timeframe * i)
+
+
+                            # Puxando informações de candlesticks
+                            velas = self.api_iqoption.get_candles(ativo_da_operacao, timeframe * 60, 1, timestamp)
+                            # Identifica a cor da vela
+                            if velas[0]['close'] > velas[0]['open']:
+                                cor_candle = "Verde"  # Vela de alta
+                            elif velas[0]['close'] < velas[0]['open']:
+                                cor_candle = "Vermelha"  # Vela de baixa
+                            else:
+                                cor_candle = "Doji"  # Vela neutra (abertura igual ao fechamento)
+
+                            # Converte o timestamp para o horário legível
+                            horario_candle_ = datetime.fromtimestamp(velas[0]['from']).strftime('%Y-%m-%d %H:%M:%S')
+
+                            # Exibe a posição da vela, sua cor e o horário
+                            print(f"Uma vela puxada:\n   Vela - Cor: {cor_candle} - Horário: {horario_candle_}") 
+
+                            # Verificando o resultado da operação
+                            cor = 'vermelha' if velas[0]['open'] > velas[0]['close'] else 'verde' if velas[0]['open'] < velas[0]['close'] else 'doji'
+
+                            velas = self.api_iqoption.get_candles(ativo_da_operacao, timeframe*60, 15, timestamp)
+
+                            # Percorre cada vela
+                            print('15 velas puxadas:')
+                            for index, candle in enumerate(velas, start=1):
+                                # Identifica a cor da vela
+                                if candle['close'] > candle['open']:
+                                    cor_candle = "Verde"  # Vela de alta
+                                elif candle['close'] < candle['open']:
+                                    cor_candle = "Vermelha"  # Vela de baixa
+                                else:
+                                    cor_candle = "Doji"  # Vela neutra (abertura igual ao fechamento)
+
+                                # Converte o timestamp para o horário legível
+                                horario_candle = datetime.fromtimestamp(candle['from']).strftime('%Y-%m-%d %H:%M:%S')
+
+                                # Exibe a posição da vela, sua cor e o horário
+                                print(f"   {index}ª Vela - Cor: {cor_candle} - Horário: {horario_candle}") 
+
+                            if cor != 'doji':
+                                if (cor == 'vermelha' and direcao == 'PUT') or (cor == 'verde' and direcao == 'CALL'):
+                                    resultado = 'win'
+                                elif (cor == 'vermelha' and direcao == 'CALL') or (cor == 'verde' and direcao == 'PUT'):
+                                    resultado = 'loss'
+                                else:
+                                    resultado = ''
+
+                                if resultado == 'win':
+                                    
+                                    # 1. gerar imagem
+                                    nome_da_imagem = grafico_candlestick(
+                                        telegram={'id': api_hash}, velas=velas, titulo=ativo_da_operacao.replace('-op', ''), subtitulo=f'Win +R$({resultado_atual})')
+                                    
+                                    # 2. enviando mensagem de win(+R$) com imagem e sticker
+                                    for grupo in lista_de_grupos:
+                                        try:
+                                            self.api_telegram.send_photo(
+                                                chat_id=grupo, 
+                                                photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
+                                                caption=mensagens.def_mensagem_de_resultado_da_operacao(ativo_da_operacao.replace('-op', ''), horario_da_operacao, timeframe, direcao, f'<b>Win +R$({resultado_atual})</b>', mensagem_de_promocao='win')
+                                            )
+
+                                            if resultado_atual == 'Nenhum Martingale':
+                                                sticker_path = 'sticks/win-sem-gale.webp'
+                                            else:  # Para '1° Martingale' ou '2° Martingale'
+                                                sticker_path = 'sticks/win-no-gale.webp'
+                                            self.api_telegram.send_sticker(chat_id=grupo, sticker=open(sticker_path, 'rb'))
+                                        except Exception as error:
+                                            print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao enviar mensagem de win (+R$) | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
+                                    
+                                    # 3. excluir Imagem
                                     try:
-                                        self.api_telegram.send_message(grupo, mensagens.def_mensagem_de_operacao_realizada(ativo_da_operacao.replace("-op", "")))
+                                        self.lista_de_imagens.append(f'machinelearning/temporary images/{nome_da_imagem}')
                                     except Exception as error:
-                                        print("{}[LOG]{} @Catalogador | @Function monitor_operations(try/exception) | ocorreu um erro ao tentar enviar a mensagem de operação realizada | @Operação {} {} {}M {} | @Error {}".format(Fore.GREEN, Fore.RESET,ativo_da_operacao, horario, timeframe, direcao, error))
+                                        print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao adicionar imagem a lista de exclusão | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
 
-                                resultados = ['Nenhum Martingale', '1° Martingale', '2° Martingale']
-                                for i, resultado_atual in enumerate(resultados):
-                                    # Espera o tempo apropriado
-                                    time.sleep(timeframe * 60)
+                                    # Aguardar 20 segundos
+                                    time.sleep(20)
 
-                                    # Calculando timestamp
-                                    timestamp = datetime.timestamp(
-                                        datetime.strptime(
-                                            datetime.fromtimestamp(datetime.utcnow().timestamp() - 10800)
-                                            .strftime('%d/%m/%Y') + ' {}:00'.format(horario_da_operacao),
-                                            '%d/%m/%Y %H:%M:%S') + timedelta(minutes=timeframe * i)  # Adiciona o deslocamento do martingale (0, +1min, +2min)
-                                    )
+                                    # 4. enviar enquete 
+                                    for grupo in lista_de_grupos:
+                                        try:
+                                            self.api_telegram.send_poll(
+                                                chat_id=grupo, 
+                                                question="Você pegou esse Win(+R$)?", 
+                                                options=["👍 Sim", "👎 Não"], 
+                                                type="quiz", 
+                                                correct_option_id=0, 
+                                                is_anonymous=False
+                                            )
+                                        except Exception as error:
+                                            print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao enviar enquete | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
+                                    
+                                    # Aguardar 20 segundos
+                                    time.sleep(20)
 
-                                    # Puxando informações de candlesticks
-                                    velas = self.api_iqoption.get_candles(ativo_da_operacao, timeframe * 60, 1, timestamp)
-
-                                    # Verificando o resultado da operação
-                                    cor = 'vermelha' if velas[0]['open'] > velas[0]['close'] else 'verde' if velas[0]['open'] < velas[0]['close'] else 'doji'
-
-                                    velas = self.api_iqoption.get_candles(ativo_da_operacao, timeframe*60, 15, timestamp)
-                                            
-                                    if cor != 'doji':
-                                        if (cor == 'vermelha' and direcao == 'PUT') or (cor == 'verde' and direcao == 'CALL'):
-                                            resultado = 'win'
-                                        elif (cor == 'vermelha' and direcao == 'CALL') or (cor == 'verde' and direcao == 'PUT'):
-                                            resultado = 'loss'
-                                        else:
-                                            resultado = ''
-
-                                        if resultado == 'win':
-                                            
-                                            # 1. gerar imagem
-                                            nome_da_imagem = grafico_candlestick(
-                                                telegram={'id': api_hash}, velas=velas, titulo=ativo_da_operacao.replace('-op', ''), subtitulo=f'Win +R$({resultado_atual})')
-                                            
-                                            # 2. enviando mensagem de win(+R$) com imagem e sticker
-                                            for grupo in lista_de_grupos:
-                                                try:
-                                                    self.api_telegram.send_photo(
-                                                        chat_id=grupo, 
-                                                        photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
-                                                        caption=mensagens.def_mensagem_de_resultado_da_operacao(ativo_da_operacao.replace('-op', ''), horario_da_operacao, timeframe, direcao, f'<b>Win +R$({resultado_atual})</b>', mensagem_de_promocao='win')
-                                                    )
-
-                                                    if resultado_atual == 'Nenhum Martingale':
-                                                        sticker_path = 'sticks/win-sem-gale.webp'
-                                                    else:  # Para '1° Martingale' ou '2° Martingale'
-                                                        sticker_path = 'sticks/win-no-gale.webp'
-                                                    self.api_telegram.send_sticker(chat_id=grupo, sticker=open(sticker_path, 'rb'))
-                                                except Exception as error:
-                                                    print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao enviar mensagem de win (+R$) | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
-                                            
-                                            # 3. excluir Imagem
-                                            try:
-                                                self.lista_de_imagens.append(f'machinelearning/temporary images/{nome_da_imagem}')
-                                            except Exception as error:
-                                                print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao adicionar imagem a lista de exclusão | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
-
-                                            # Aguardar 20 segundos
-                                            time.sleep(20)
-
-                                            # 4. enviar enquete 
-                                            for grupo in lista_de_grupos:
-                                                try:
-                                                    self.api_telegram.send_poll(
-                                                        chat_id=grupo, 
-                                                        question="Você pegou esse Win(+R$)?", 
-                                                        options=["👍 Sim", "👎 Não"], 
-                                                        type="quiz", 
-                                                        correct_option_id=0, 
-                                                        is_anonymous=False
-                                                    )
-                                                except Exception as error:
-                                                    print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao enviar enquete | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
-                                            
-                                            # Aguardar 20 segundos
-                                            time.sleep(20)
-
-                                            # 5. atualizar o placar no banco de dados
-                                            placar = self.botManager.addWin()
-                                            self.wins = placar["wins"]
-                                            self.losses = placar["losses"]
-                                            
-                                            # 6. enviar mensagem do placar
-                                            for grupo in lista_de_grupos:
-                                                try:
-                                                    url = "https://wa.me/5531997711921?text=Quero%20saber%20mais%20sobre%20os%20sinais%20VIP"
-                                                    button_text = "👉 SINAIS VIP"
-                                                    markup = InlineKeyboardMarkup()
-                                                    button = InlineKeyboardButton(text=button_text, url=url)
-                                                    markup.add(button)
-                                                    """client.send_message(chat_id=grupo["id do grupo(telegram)"], text=mensagens.def_mensagem_do_placar(WINS, LOSSES), reply_markup=markup)"""
-                                                    self.api_telegram.send_message(chat_id=grupo, text=mensagens.def_mensagem_do_placar(self.wins, self.losses), reply_markup=markup)
-                                                except Exception as error:
-                                                    print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao enviar placar | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
-                                            
-
-
-
-
-                                            if self.wins >= 1000:
-                                                placar = self.botManager.resetPlacar()
-                                                self.wins = placar["wins"]
-                                                self.losses = placar["losses"]
-
-
-
-
-                                            break  # Parar o loop se o resultado for 'win'
-
-                                        elif resultado == 'loss':
-                                            # 1. gerar imagem
-                                            nome_da_imagem = grafico_candlestick(
-                                                telegram={'id': api_hash}, velas=velas, titulo=ativo_da_operacao.replace('-op', ''), subtitulo=f'Loss -R$({resultado_atual})')
-                                            
-                                            # 2. enviar mensagem de loss(-R$) com a imagem gerada
-                                            for grupo in lista_de_grupos:
-                                                try:
-                                                    if resultado_atual == 'Nenhum Martingale':
-                                                        self.api_telegram.send_photo(
-                                                            chat_id=grupo, 
-                                                            photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
-                                                            caption=mensagens.def_mensagem_de_resultado_da_operacao(ativo_da_operacao.replace('-op',''), horario_da_operacao, timeframe, direcao, f'<b>Loss -R$({resultado_atual})</b>', aguardando_1_martingale=True)
-                                                        )
-                                                    elif resultado_atual == '1° Martingale':
-                                                        self.api_telegram.send_photo(
-                                                            chat_id=grupo, 
-                                                            photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
-                                                            caption=mensagens.def_mensagem_de_resultado_da_operacao(ativo_da_operacao.replace('-op',''), horario_da_operacao, timeframe, direcao, f'<b>Loss -R$({resultado_atual})</b>', aguardando_2_martingale=True)
-                                                        )
-                                                    else:
-                                                        self.api_telegram.send_photo(
-                                                            chat_id=grupo, 
-                                                            photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
-                                                            caption=mensagens.def_mensagem_de_resultado_da_operacao(ativo_da_operacao.replace('-op',''), horario_da_operacao, timeframe, direcao, f'<b>Loss -R$({resultado_atual})</b>')
-                                                        )
-                                                        sticker_path = 'sticks/loss.webp'
-                                                        self.api_telegram.send_sticker(chat_id=grupo, sticker=open(sticker_path, 'rb'))
-                                                    
-                                                        
-
-
-                                                except Exception as error:
-                                                    print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao enviar mensagem de loss | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
-                                            
-                                            # 3. excluir imagem
-                                            try:
-                                                self.lista_de_imagens.append(f'machinelearning/temporary images/{nome_da_imagem}')
-                                            except Exception as error:
-                                                print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao adicionar imagem a lista de exclusão | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
-                                            
-                                            # 4. enviar placar atual caso for loss no 2° martingale
-                                            if resultado_atual == '2° Martingale':
-                                                placar = self.botManager.addLoss()
-                                                self.wins = placar["wins"]
-                                                self.losses = placar["losses"]
-
-                                                for grupo in lista_de_grupos:
-                                                    try:
-                                                        self.api_telegram.send_message(chat_id=grupo, text=mensagens.def_mensagem_do_placar(self.wins, self.losses))
-                                                    except Exception as error:
-                                                        print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao enviar placar | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
-                                                break
-
-                                    else:  # Se for um DOJI
-                                        if resultado_atual == '2° Martingale':
-                                            # 1. gerar imagem
-                                            nome_da_imagem = grafico_candlestick(
-                                                telegram={'id': api_hash}, velas=velas, titulo=ativo_da_operacao.replace('-op',''), subtitulo=f'Loss -R$({resultado_atual})')
-                                            
-                                            # 2. enviar imagem com a mensagem 
-                                            for grupo in lista_de_grupos:
-                                                try:
-                                                    self.api_telegram.send_photo(
-                                                        chat_id=grupo, 
-                                                        photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
-                                                        caption=mensagens.def_mensagem_de_resultado_da_operacao(
-                                                            ativo_da_operacao.replace('-op',''), horario_da_operacao, timeframe, direcao, 
-                                                            f'<b>Loss -R$({resultado_atual})</b>\n\n\n🔍 <i>DOJI</i> detectado no ativo <i>{ativo_da_operacao}</i>')
-                                                    )
-                                                    self.api_telegram.send_sticker(chat_id=grupo, sticker=open('sticks/doji.webp', 'rb'))
-                                                except Exception as error:
-                                                    print(f"[LOG] Erro ao enviar mensagem de DOJI | {ativo_da_operacao} | Erro: {error}")
-                                            
-                                            try:
-                                                self.lista_de_imagens.append(f'machinelearning/temporary images/{nome_da_imagem}')
-                                            except Exception as error:
-                                                print(f"[LOG] Erro ao adicionar imagem a lista de exclusão | Erro: {error}")
-                                            
-                                            # 3. enviar placar
-                                            placar = self.botManager.addLoss()
-                                            self.wins = placar["wins"]
-                                            self.losses = placar["losses"]
-
-                                            for grupo in lista_de_grupos:
-                                                try:
-                                                    self.api_telegram.send_message(chat_id=grupo, text=mensagens.def_mensagem_do_placar(self.wins, self.losses))
-                                                except Exception as error:
-                                                    print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao enviar placar | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
-                                            
-                                            time.sleep(10)
-
-                                            break  # Finalizar porque atingiu o limite de martingale
-                                        else:
-                                            # Enviar mensagem de DOJI e continuar para o próximo gale
-                                            nome_da_imagem = grafico_candlestick(
-                                                telegram={'id': api_hash}, velas=velas, titulo=ativo_da_operacao.replace('-op',''), subtitulo=f'DOJI detectado ({resultado_atual})')
-                                            
-                                            for grupo in lista_de_grupos:
-                                                try:
-                                                    self.api_telegram.send_photo(
-                                                        chat_id=grupo, 
-                                                        photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
-                                                        caption=mensagens.def_mensagem_de_resultado_da_operacao(
-                                                            ativo_da_operacao.replace('-op',''), horario_da_operacao, timeframe, direcao, 
-                                                            f'\n🔍 DOJI detectado no ativo <i>{ativo_da_operacao}</i>. continuando operação...')
-                                                    )
-                                                except Exception as error:
-                                                    print(f"[LOG] Erro ao enviar mensagem de DOJI (continuação) | {ativo_da_operacao} | Erro: {error}")
-                                            
-                                            try:
-                                                self.lista_de_imagens.append(f'machinelearning/temporary images/{nome_da_imagem}')
-                                            except Exception as error:
-                                                print(f"[LOG] Erro ao adicionar imagem a lista de exclusão | Erro: {error}")
-                                            
-                                            time.sleep(10)
-                                            continue  # Continuar para o próximo gale
+                                    # 5. atualizar o placar no banco de dados
+                                    placar = self.botManager.addWin()
+                                    self.wins = placar["wins"]
+                                    self.losses = placar["losses"]
+                                    
+                                    # 6. enviar mensagem do placar
+                                    for grupo in lista_de_grupos:
+                                        try:
+                                            url = "https://wa.me/5531997711921?text=Quero%20saber%20mais%20sobre%20os%20sinais%20VIP"
+                                            button_text = "👉 SINAIS VIP"
+                                            markup = InlineKeyboardMarkup()
+                                            button = InlineKeyboardButton(text=button_text, url=url)
+                                            markup.add(button)
+                                            """client.send_message(chat_id=grupo["id do grupo(telegram)"], text=mensagens.def_mensagem_do_placar(WINS, LOSSES), reply_markup=markup)"""
+                                            self.api_telegram.send_message(chat_id=grupo, text=mensagens.def_mensagem_do_placar(self.wins, self.losses), reply_markup=markup)
+                                        except Exception as error:
+                                            print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao enviar placar | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
                                     
 
-                                break
-                                
-                                
-                            else:
-                                pass
-                            time.sleep(1)
+
+
+
+                                    if self.wins >= 1000:
+                                        placar = self.botManager.resetPlacar()
+                                        self.wins = placar["wins"]
+                                        self.losses = placar["losses"]
+
+
+
+
+                                    break  # Parar o loop se o resultado for 'win'
+
+                                elif resultado == 'loss':
+                                    # 1. gerar imagem
+                                    nome_da_imagem = grafico_candlestick(
+                                        telegram={'id': api_hash}, velas=velas, titulo=ativo_da_operacao.replace('-op', ''), subtitulo=f'Loss -R$({resultado_atual})')
+                                    
+                                    # 2. enviar mensagem de loss(-R$) com a imagem gerada
+                                    for grupo in lista_de_grupos:
+                                        try:
+                                            if resultado_atual == 'Nenhum Martingale':
+                                                self.api_telegram.send_photo(
+                                                    chat_id=grupo, 
+                                                    photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
+                                                    caption=mensagens.def_mensagem_de_resultado_da_operacao(ativo_da_operacao.replace('-op',''), horario_da_operacao, timeframe, direcao, f'<b>Loss -R$({resultado_atual})</b>', aguardando_1_martingale=True)
+                                                )
+                                            elif resultado_atual == '1° Martingale':
+                                                self.api_telegram.send_photo(
+                                                    chat_id=grupo, 
+                                                    photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
+                                                    caption=mensagens.def_mensagem_de_resultado_da_operacao(ativo_da_operacao.replace('-op',''), horario_da_operacao, timeframe, direcao, f'<b>Loss -R$({resultado_atual})</b>', aguardando_2_martingale=True)
+                                                )
+                                            else:
+                                                self.api_telegram.send_photo(
+                                                    chat_id=grupo, 
+                                                    photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
+                                                    caption=mensagens.def_mensagem_de_resultado_da_operacao(ativo_da_operacao.replace('-op',''), horario_da_operacao, timeframe, direcao, f'<b>Loss -R$({resultado_atual})</b>')
+                                                )
+                                                sticker_path = 'sticks/loss.webp'
+                                                self.api_telegram.send_sticker(chat_id=grupo, sticker=open(sticker_path, 'rb'))
+                                            
+                                                
+
+
+                                        except Exception as error:
+                                            print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao enviar mensagem de loss | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
+                                    
+                                    # 3. excluir imagem
+                                    try:
+                                        self.lista_de_imagens.append(f'machinelearning/temporary images/{nome_da_imagem}')
+                                    except Exception as error:
+                                        print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao adicionar imagem a lista de exclusão | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
+                                    
+                                    # 4. enviar placar atual caso for loss no 2° martingale
+                                    if resultado_atual == '2° Martingale':
+                                        placar = self.botManager.addLoss()
+                                        self.wins = placar["wins"]
+                                        self.losses = placar["losses"]
+
+                                        for grupo in lista_de_grupos:
+                                            try:
+                                                self.api_telegram.send_message(chat_id=grupo, text=mensagens.def_mensagem_do_placar(self.wins, self.losses))
+                                            except Exception as error:
+                                                print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao enviar placar | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
+                                        break
+
+                            else:  # Se for um DOJI
+                                if resultado_atual == '2° Martingale':
+                                    # 1. gerar imagem
+                                    nome_da_imagem = grafico_candlestick(
+                                        telegram={'id': api_hash}, velas=velas, titulo=ativo_da_operacao.replace('-op',''), subtitulo=f'Loss -R$({resultado_atual})')
+                                    
+                                    # 2. enviar imagem com a mensagem 
+                                    for grupo in lista_de_grupos:
+                                        try:
+                                            self.api_telegram.send_photo(
+                                                chat_id=grupo, 
+                                                photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
+                                                caption=mensagens.def_mensagem_de_resultado_da_operacao(
+                                                    ativo_da_operacao.replace('-op',''), horario_da_operacao, timeframe, direcao, 
+                                                    f'<b>Loss -R$({resultado_atual})</b>\n\n\n🔍 <i>DOJI</i> detectado no ativo <i>{ativo_da_operacao}</i>')
+                                            )
+                                            self.api_telegram.send_sticker(chat_id=grupo, sticker=open('sticks/doji.webp', 'rb'))
+                                        except Exception as error:
+                                            print(f"[LOG] Erro ao enviar mensagem de DOJI | {ativo_da_operacao} | Erro: {error}")
+                                    
+                                    try:
+                                        self.lista_de_imagens.append(f'machinelearning/temporary images/{nome_da_imagem}')
+                                    except Exception as error:
+                                        print(f"[LOG] Erro ao adicionar imagem a lista de exclusão | Erro: {error}")
+                                    
+                                    # 3. enviar placar
+                                    placar = self.botManager.addLoss()
+                                    self.wins = placar["wins"]
+                                    self.losses = placar["losses"]
+
+                                    for grupo in lista_de_grupos:
+                                        try:
+                                            self.api_telegram.send_message(chat_id=grupo, text=mensagens.def_mensagem_do_placar(self.wins, self.losses))
+                                        except Exception as error:
+                                            print(f"[LOG] @Catalogador | @Function monitor_operations | Erro ao enviar placar | {ativo_da_operacao} {horario_da_operacao} {timeframe}M | Erro: {error}")
+                                    
+                                    time.sleep(10)
+
+                                    break  # Finalizar porque atingiu o limite de martingale
+                                else:
+                                    # Enviar mensagem de DOJI e continuar para o próximo gale
+                                    nome_da_imagem = grafico_candlestick(
+                                        telegram={'id': api_hash}, velas=velas, titulo=ativo_da_operacao.replace('-op',''), subtitulo=f'DOJI detectado ({resultado_atual})')
+                                    
+                                    for grupo in lista_de_grupos:
+                                        try:
+                                            self.api_telegram.send_photo(
+                                                chat_id=grupo, 
+                                                photo=open(f'machinelearning/temporary images/{nome_da_imagem}', 'rb'), 
+                                                caption=mensagens.def_mensagem_de_resultado_da_operacao(
+                                                    ativo_da_operacao.replace('-op',''), horario_da_operacao, timeframe, direcao, 
+                                                    f'\n🔍 DOJI detectado no ativo <i>{ativo_da_operacao}</i>. continuando operação...')
+                                            )
+                                        except Exception as error:
+                                            print(f"[LOG] Erro ao enviar mensagem de DOJI (continuação) | {ativo_da_operacao} | Erro: {error}")
+                                    
+                                    try:
+                                        self.lista_de_imagens.append(f'machinelearning/temporary images/{nome_da_imagem}')
+                                    except Exception as error:
+                                        print(f"[LOG] Erro ao adicionar imagem a lista de exclusão | Erro: {error}")
+                                    
+                                    time.sleep(10)
+                                    continue  # Continuar para o próximo gale
+                            
+
+                               
                     else:
                         pass
                 else:
