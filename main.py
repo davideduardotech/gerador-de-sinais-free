@@ -570,9 +570,26 @@ class BotManager:
                     self.reconectar_iqoption()
                 
                 configuracoes = self.catalogador.definir_configuracoes_automaticas_para_operacoes_rapidas({}, timeframe='1 minuto')
-                dicionario_operacoes = self.catalogador.catalogar_operacoes_rapidas(configuracoes)
-                 
+                #dicionario_operacoes = self.catalogador.catalogar_operacoes_rapidas(configuracoes)
+                #print('dicionario de operações:', dicionario_operacoes)
+               
+
+                dicionario_operacoes = {
+                    '01:10': {'EURUSD-op': {'01:10': {'verde': 0, 'vermelha': 4, 'doji': 0, '%': 100, 'dir': 'PUT ', 'mg1': {'verde': 2, 'vermelha': 5, 'doji': 1, '%': 62}}}}, 
+                    '01:14': {'NZDUSD-op': {'01:14': {'verde': 0, 'vermelha': 3, 'doji': 1, '%': 100, 'dir': 'PUT ', 'mg1': {'verde': 1, 'vermelha': 6, 'doji': 1, '%': 75}}}}, 
+                    '01:17': {'USDJPY-op': {'01:17': {'verde': 0, 'vermelha': 4, 'doji': 0, '%': 100, 'dir': 'PUT ', 'mg1': {'verde': 2, 'vermelha': 6, 'doji': 0, '%': 75}}}}, 
+                    '01:21': {'EURUSD-op': {'01:21': {'verde': 0, 'vermelha': 4, 'doji': 0, '%': 100, 'dir': 'PUT ', 'mg1': {'verde': 3, 'vermelha': 5, 'doji': 0, '%': 62}}}}, 
+                    '01:25': {'EURUSD-op': {'01:25': {'verde': 0, 'vermelha': 3, 'doji': 1, '%': 100, 'dir': 'PUT ', 'mg1': {'verde': 2, 'vermelha': 5, 'doji': 1, '%': 62}}}}, 
+                    '01:29': {'NZDUSD-op': {'01:29': {'verde': 0, 'vermelha': 4, 'doji': 0, '%': 100, 'dir': 'PUT ', 'mg1': {'verde': 1, 'vermelha': 7, 'doji': 0, '%': 88}}}}, 
+                    '01:33': {'EURUSD-op': {'01:33': {'verde': 0, 'vermelha': 4, 'doji': 0, '%': 100, 'dir': 'PUT ', 'mg1': {'verde': 1, 'vermelha': 6, 'doji': 1, '%': 75}}}}, 
+                    '01:37': {'USDJPY-op': {'01:37': {'verde': 0, 'vermelha': 4, 'doji': 0, '%': 100, 'dir': 'PUT ', 'mg1': {'verde': 2, 'vermelha': 6, 'doji': 0, '%': 75}}}}, 
+                    '01:42': {'EURUSD-op': {'01:42': {'verde': 0, 'vermelha': 3, 'doji': 1, '%': 100, 'dir': 'PUT ', 'mg1': {'verde': 2, 'vermelha': 5, 'doji': 1, '%': 62}}}}, 
+                    '01:46': {'USDJPY-op': {'01:46': {'verde': 4, 'vermelha': 0, 'doji': 0, '%': 100, 'dir': 'CALL', 'mg1': {'verde': 5, 'vermelha': 3, 'doji': 0, '%': 62}}}}, 
+                    '01:50': {'USDJPY-op': {'01:50': {'verde': 4, 'vermelha': 0, 'doji': 0, '%': 100, 'dir': 'CALL', 'mg1': {'verde': 7, 'vermelha': 1, 'doji': 0, '%': 88}}}}, 
+                    '01:54': {'USDJPY-op': {'01:54': {'verde': 0, 'vermelha': 4, 'doji': 0, '%': 100, 'dir': 'PUT ', 'mg1': {'verde': 3, 'vermelha': 5, 'doji': 0, '%': 62}}}}, 
+                }
                 
+
         
                 self.catalogador.monitor_operations(
                     self.api_iqoption,
@@ -591,8 +608,6 @@ class BotManager:
         """Inicializa o bot."""
         print("| Detalhes")
         print("Desenvolvedor: David Eduardo (https://github.com/davideduardotech)")
-
-
 
         self.criar_pasta_de_imagens()
         self.conectar_mongodb()

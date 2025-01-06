@@ -463,45 +463,15 @@ class Catalogador:
                             # Calculando timestamp
                             timestamp = self.botManager.horario.timestamp(horario, deslocamento_minutos=timeframe * i)
 
-
                             # Puxando informações de candlesticks
-                            velas = self.api_iqoption.get_candles(ativo_da_operacao, timeframe * 60, 1, timestamp)
-                            # Identifica a cor da vela
-                            if velas[0]['close'] > velas[0]['open']:
-                                cor_candle = "Verde"  # Vela de alta
-                            elif velas[0]['close'] < velas[0]['open']:
-                                cor_candle = "Vermelha"  # Vela de baixa
-                            else:
-                                cor_candle = "Doji"  # Vela neutra (abertura igual ao fechamento)
-
-                            # Converte o timestamp para o horário legível
-                            horario_candle_ = datetime.fromtimestamp(velas[0]['from']).strftime('%Y-%m-%d %H:%M:%S')
-
-                            # Exibe a posição da vela, sua cor e o horário
-                            print(f"Uma vela puxada:\n   Vela - Cor: {cor_candle} - Horário: {horario_candle_}") 
+                            vela = self.api_iqoption.get_candles(ativo_da_operacao, timeframe * 60, 1, timestamp)
 
                             # Verificando o resultado da operação
-                            cor = 'vermelha' if velas[0]['open'] > velas[0]['close'] else 'verde' if velas[0]['open'] < velas[0]['close'] else 'doji'
+                            cor = 'vermelha' if vela[0]['open'] > vela[0]['close'] else 'verde' if vela[0]['open'] < vela[0]['close'] else 'doji'
 
                             velas = self.api_iqoption.get_candles(ativo_da_operacao, timeframe*60, 15, timestamp)
 
-                            # Percorre cada vela
-                            print('15 velas puxadas:')
-                            for index, candle in enumerate(velas, start=1):
-                                # Identifica a cor da vela
-                                if candle['close'] > candle['open']:
-                                    cor_candle = "Verde"  # Vela de alta
-                                elif candle['close'] < candle['open']:
-                                    cor_candle = "Vermelha"  # Vela de baixa
-                                else:
-                                    cor_candle = "Doji"  # Vela neutra (abertura igual ao fechamento)
-
-                                # Converte o timestamp para o horário legível
-                                horario_candle = datetime.fromtimestamp(candle['from']).strftime('%Y-%m-%d %H:%M:%S')
-
-                                # Exibe a posição da vela, sua cor e o horário
-                                print(f"   {index}ª Vela - Cor: {cor_candle} - Horário: {horario_candle}") 
-
+                            
                             if cor != 'doji':
                                 if (cor == 'vermelha' and direcao == 'PUT') or (cor == 'verde' and direcao == 'CALL'):
                                     resultado = 'win'
